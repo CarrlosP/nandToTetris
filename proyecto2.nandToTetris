@@ -1,0 +1,107 @@
+def nand(a, b):
+    return int(not (a and b))  # Devuelve 1 o 0 en lugar de True/False
+
+def and_gate(a, b):
+    return nand(nand(a, b), nand(a, b))  # AND = NAND(NAND(a, b), NAND(a, b))
+
+def or_gate(a, b):
+    return nand(nand(a, a), nand(b, b))  # OR = NAND(NAND(a, a), NAND(b, b))
+
+def xor_gate(a, b):
+    return nand(nand(a, nand(a, b)), nand(b, nand(a, b)))  # XOR = NAND(NAND(a, NAND(a, b)), NAND(b, NAND(a, b)))
+
+def half_adder(a, b):
+    sum_bit = xor_gate(a, b)
+    carry_bit = and_gate(a, b)
+    return sum_bit, carry_bit
+
+def full_adder(a, b, carry_in):
+    sum1, carry1 = half_adder(a, b)
+    sum2, carry2 = half_adder(sum1, carry_in)
+    carry_out = or_gate(carry1, carry2)
+    return sum2, carry_out
+    
+def add16(a, b):
+    result = [0] * 16
+    carry = 0
+    
+    for i in range(16):
+        sum_bit, carry = full_adder(a[i], b[i], carry)
+        result[i] = sum_bit
+    
+    return result, carry
+
+def inc16(a):
+    inc = [0] * 16
+    carry = 1
+    
+    for i in range(16):
+        sum_bit, carry = full_adder(a[i], carry, 0)
+        inc[i] = sum_bit
+    
+    return inc
+    
+def alu(x, y, zx, nx, zy, ny, f, no):
+    # Operación en X
+    if zx:
+        x = [0] * 16
+    if nx:
+        x = [nand(bit, bit) for bit in x]  # NOT x usando NAND
+    
+    # Operación en Y
+    if zy:
+        y = [0] * 16
+    if ny:
+        y = [nand(bit, bit) for bit in y]  # NOT y usando NAND
+    
+    # Función
+    if f:
+        out, carry_out = add16(x, y)  # ADD
+    else:
+        out = [and_gate(x[i], y[i]) for i in range(16)]  # AND
+    
+    # Negación de salida
+    if no:
+        out = [nand(bit, bit) for bit in out]  # NOT out usando NAND
+    
+    return out
+
+
+# Prueba del Half Adder
+a, b = 1, 0
+sum_bit, carry_bit = half_adder(a, b)
+print(f"Half Adder: a = {a}, b = {b} -> Suma = {sum_bit}, Carry = {carry_bit}")
+
+# Prueba del Full Adder
+a, b, carry_in = 1, 1, 1
+s, c = full_adder(a, b, carry_in)
+print(f"Full Adder: Suma = {s}, Carry = {c}")
+
+# Prueba del Add16
+a = [0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1]  # Número binario de 16 bits
+b = [1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0]  # Otro número binario de 16 bits
+
+sum_result, carry_out = add16(a, b)
+print(f"Add16: Suma = {sum_result}, Carry = {carry_out}")
+
+# Prueba del Inc16
+a = [1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1]  # Número binario de 16 bits
+inc_result = inc16(a)
+print(f"Inc16: Incremento de {a} -> {inc_result}")
+
+
+# Prueba de la ALU
+x = [0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1]  # Número binario de 16 bits
+y = [1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0]  # Otro número binario de 16 bits
+
+# Prueba: x + y
+alu_result = alu(x, y, 0, 0, 0, 0, 1, 0)
+print(f"ALU (x + y): {alu_result}")
+
+# Prueba: x AND y
+alu_result = alu(x, y, 0, 0, 0, 0, 0, 0)
+print(f"ALU (x AND y): {alu_result}")
+
+# Prueba: NOT x
+alu_result = alu(x, y, 0, 1, 1, 0, 0, 1)
+print(f"ALU (NOT x): {alu_result}")
